@@ -1,7 +1,9 @@
-setInterval(async () => {
+import cron from "node-cron";
+
+cron.schedule("*/15 * * * *", async () => {
   try {
-    const res = await fetch("https.collaboration-gwsu.onrender.com/");
+    const res = await fetch("https://collaboration-gwsu.onrender.com/");
   } catch (error) {
     console.log(error.message);
   }
-}, 15 * 60 * 1000);
+});
