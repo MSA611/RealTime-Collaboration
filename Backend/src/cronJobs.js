@@ -1,4 +1,4 @@
-import cron from "node-cron";
+import cron from "cron";
 
 cron.schedule("*/15 * * * *", async () => {
   try {
