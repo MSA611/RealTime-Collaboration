@@ -1,53 +1,38 @@
-import express from "express";
-import http from "http";
-import { Server } from "socket.io";
-import cors from "cors";
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
 
-const app = express();
-app.use(cors());
+const server = createServer();
 
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*", // Allow connections from any origin (for development)
-    methods: ["GET", "POST"],
-  },
-});
+const rooms = new Map();
+const wss = new WebSocketServer({ server });
 
-const documents = {};
+wss.on("connection", (ws, req) => {
+  const { query } = req.url;
 
-io.on("connection", (socket) => {
-  console.log(`A user connected: ${socket.id}`);
-  socket.on("join-document", (documentId) => {
-    socket.join(documentId);
-    console.log(`User ${socket.id} joined document ${documentId}`);
-    if (!documents[documentId]) {
-      documents[documentId] = {
-        id: documentId,
-        content: "", // Start with empty content
-      };
+  const roomId = query.room || "default";
+
+  if (!rooms.has(roomId)) rooms.set(roomId, new Set());
+
+  rooms.get(roomId).add(ws);
+
+  console.log(`Client joined room: ${roomId}`);
+
+  ws.on("message", (message) => {
+    for (const client of rooms.get(roomId)) {
+      if (client !== ws && client.readyState === ws.OPEN) {
+        client.send(message.toString());
+      }
     }
-
-    socket.emit("load-document", documents[documentId].content);
-    socket.on("code-change", (newContent) => {
-      documents[documentId].content = newContent;
-      socket.to(documentId).emit("code-updated", newContent);
-    });
   });
 
-  // Event listener for when a user disconnects
-  socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.id}`);
+  ws.on("close", () => {
+    rooms.get(roomId)?.delete(ws);
+    if (rooms.get(roomId)?.size === 0) {
+      rooms.delete(roomId);
+    }
   });
 });
 
-// --- Basic Express Route ---
-app.get("/", (req, res) => {
-  res.send("Collaborative Editor Backend is running!");
-});
-
-// --- Start the Server ---
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}`);
+server.listen(3000, () => {
+  console.log("WebSocket server running on ws://localhost:3000");
 });

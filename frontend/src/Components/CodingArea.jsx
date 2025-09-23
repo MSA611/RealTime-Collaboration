@@ -1,54 +1,110 @@
-import { Box } from "@chakra-ui/react";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { Editor } from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router";
-import { io } from "socket.io-client";
-
-const socket = io("http://localhost:3001");
 
 const CodingArea = () => {
-  const [codeValue, setCodeValue] = useState("");
+  const [codeValue, setCodeValue] = useState(
+    `// Welcome to LiveCode Sync!\n// Share the URL to invite another user.\n// Waiting for connection...`,
+  );
+  const [status, setStatus] = useState("Connecting...");
   const editorRef = useRef(null);
-  const { id: documentId } = useParams();
+  const socketRef = useRef(null);
+  const isApplyingRemoteChange = useRef(false);
 
-  const onMount = (editor) => {
+  const handleEditorMount = (editor) => {
     editorRef.current = editor;
     editor.focus();
   };
 
   useEffect(() => {
-    if (socket == null || documentId == null) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    let roomId = urlParams.get("room");
 
-    socket.emit("join-document", documentId);
+    if (!roomId) {
+      roomId = `room-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      window.location.search = `?room=${roomId}`;
+      return;
+    }
 
-    socket.on("load-document", (content) => {
-      setCodeValue(content);
-    });
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${wsProtocol}//${window.location.hostname}:3000/?room=${roomId}`;
+    const socket = new WebSocket(wsUrl);
+    socketRef.current = socket;
 
-    socket.on("code-updated", (newContent) => {
-      if (editorRef.current && editorRef.current.getValue() !== newContent) {
-        setCodeValue(newContent);
+    socket.onopen = () => {
+      setStatus("Connected ✅");
+      if (codeValue.includes("// Waiting for connection...")) {
+        setCodeValue("// Start coding!");
       }
-    });
-    return () => {
-      socket.disconnect();
     };
-  }, [socket, documentId]);
 
-  const handleEditorChange = (value) => {
+    socket.onmessage = (event) => {
+      const newCode = event.data;
+      isApplyingRemoteChange.current = true;
+      setCodeValue(newCode);
+      isApplyingRemoteChange.current = false;
+    };
+
+    socket.onclose = (event) => {
+      setStatus("Disconnected ❌");
+      console.error(
+        `WebSocket disconnected: ${event.reason} (Code: ${event.code})`,
+      );
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      setStatus("Error ⚠️");
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, []);
+
+  const handleChange = (value) => {
     setCodeValue(value);
-    socket.emit("code-change", value);
+    if (
+      !isApplyingRemoteChange.current &&
+      socketRef.current?.readyState === WebSocket.OPEN
+    ) {
+      socketRef.current.send(value);
+    }
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      alert("Invite link copied!");
+    });
   };
 
   return (
-    <Box minH={"full"} w={"full"} p={"6"}>
+    <Box minH="100vh" w="full" p={6}>
+      <Flex
+        justify="space-between"
+        align="center"
+        bg="#252526"
+        p={3}
+        borderRadius="md"
+        mb={4}
+      >
+        <Text fontSize="lg" fontWeight="bold">
+          LiveCode Sync
+        </Text>
+        <Flex gap={3} align="center">
+          <Text>{status}</Text>
+          <Button size="sm" colorScheme="blue" onClick={copyLink}>
+            Copy Invite Link
+          </Button>
+        </Flex>
+      </Flex>
       <Editor
-        height="90vh"
+        height="85vh"
         theme="vs-dark"
         value={codeValue}
-        onChange={handleEditorChange}
         defaultLanguage="javascript"
-        onMount={onMount}
+        onMount={handleEditorMount}
+        onChange={handleChange}
       />
     </Box>
   );
