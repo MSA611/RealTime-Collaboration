@@ -1,0 +1,25 @@
+{
+  "name": "practise",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm i --prefix Backend && npm i --prefix Frontend && npm run build --prefix Frontend",
+    "start": "npm run start --prefix Backend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MSA611/RealTime-Collaboration.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MSA611/RealTime-Collaboration/issues"
+  },
+  "homepage": "https://github.com/MSA611/RealTime-Collaboration#readme",
+  "dependencies": {
+    "dotenv": "^17.2.2"
+  }
+}
