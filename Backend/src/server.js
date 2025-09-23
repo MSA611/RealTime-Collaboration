@@ -12,15 +12,8 @@ app.use(cors());
 const __dirname = path.resolve();
 
 if (process.env.NODE_ENV === "production") {
-  // Serve static files from the Frontend/dist directory
   app.use(express.static(path.join(__dirname, "../Frontend/dist")));
-
-  // Serve the index.html file for non-asset routes (SPA support)
   app.get("*", (req, res, next) => {
-    // Don't serve index.html for asset requests
-    // if (req.path.includes('.')) {
-    //   return next();
-    // }
     res.sendFile(path.join(__dirname, "../Frontend", "dist", "index.html"));
   });
 }
