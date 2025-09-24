@@ -44,18 +44,15 @@ const CodingArea = ({ setUsers }) => {
     });
 
     socket.on("userTyping", (typingUsername) => {
-      // Only show toast if no one is currently typing or it's a different user
       if (!currentlyTypingUser || currentlyTypingUser !== typingUsername) {
-        // Close any existing typing toast
         if (typingToastId) {
           toast.close(typingToastId);
         }
-        
-        // Show new typing toast
+
         const toastId = toast({
           title: `${typingUsername} typing...`,
           status: "info",
-          duration: null, // Don't auto-close, we'll close it manually
+          duration: null,
           isClosable: false,
         });
         setTypingToastId(toastId);
@@ -64,7 +61,6 @@ const CodingArea = ({ setUsers }) => {
     });
 
     socket.on("userStoppedTyping", (typingUsername) => {
-      // Close the typing toast when user stops typing
       if (typingToastId && currentlyTypingUser === typingUsername) {
         toast.close(typingToastId);
         setTypingToastId(null);
@@ -79,8 +75,7 @@ const CodingArea = ({ setUsers }) => {
       socket.off("userLeft");
       socket.off("userTyping");
       socket.off("userStoppedTyping");
-      
-      // Clear any existing timeout
+
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -90,19 +85,16 @@ const CodingArea = ({ setUsers }) => {
   const handleCodeChange = (code) => {
     setCodeValue(code);
     socket.emit("codeChange", { roomId, code });
-    
-    // Only emit typing event if not already typing
+
     if (!isTyping) {
       socket.emit("userTyping", { roomId, username });
       setIsTyping(true);
     }
-    
-    // Clear existing timeout
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    
-    // Set timeout to emit stop typing after 500ms of inactivity
+
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit("userStoppedTyping", { roomId, username });
       setIsTyping(false);
@@ -129,3 +121,4 @@ const CodingArea = ({ setUsers }) => {
 };
 
 export default CodingArea;
+

@@ -1,6 +1,6 @@
 import { Box, Button, HStack, Input, useToast, VStack } from "@chakra-ui/react";
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { v4 as uuid } from "uuid";
 
 const HomePage = () => {
@@ -19,7 +19,7 @@ const HomePage = () => {
 
   const nav = useNavigate();
 
-  const JoinNow = (e) => {
+  const JoinNow = () => {
     if (!NewId || !user) {
       toast({
         status: "error",
