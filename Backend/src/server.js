@@ -70,6 +70,14 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("userTyping", ({ roomId, username }) => {
+    socket.to(roomId).emit("userTyping", username);
+  });
+
+  socket.on("userStoppedTyping", ({ roomId, username }) => {
+    socket.to(roomId).emit("userStoppedTyping", username);
+  });
+
   socket.on("disconnect", () => {
     for (let roomId in rooms) {
       const user = rooms[roomId].users.find((u) => u.socketId === socket.id);
